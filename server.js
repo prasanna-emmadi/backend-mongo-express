@@ -18,20 +18,24 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: {
-    maxAge: 24*60*60*1000,
+    maxAge: 24 * 60 * 60 * 1000,
     path: '/'
   }
 }));
 
-//app.use(cors());
-app.use(bodyParser.json());
 
-app.use(function(req, res, next) {
-  res.header("Access-Control-Allow-Credentials", true);
-  res.header("Access-Control-Allow-Origin", "http://localhost:3004");
-  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-  next();
-});
+var issue2options = {
+  origin: [/localhost/],
+  methods: ['POST', 'GET'],
+  credentials: true,
+  maxAge: 3600,
+  "preflightContinue": false,
+  optionsSuccessStatus: 204,
+  allowedHeaders: ["Origin", "X-Requested-With", "Content-Type", "Accept", "Authorization"]
+};
+app.options('*', cors(issue2options));
+app.use(cors(issue2options));
+app.use(bodyParser.json());
 
 mongoose.connect('mongodb://127.0.0.1:27017/todos1', {
   useNewUrlParser: true,
@@ -51,14 +55,6 @@ app.listen(PORT, function () {
 /**
  * Custom middleware
  */
-const redirectLogin = (req, res, next) => {
-  if (!req.session.userId) {
-    res.json({ login: false });
-    //resp.redirect("/expired");
-  } else {
-    next();
-  }
-}
 
 const redirectHome = (req, res, next) => {
   if (req.session.userId) {
@@ -130,7 +126,7 @@ app.get('/logout', function (req, res, next) {
   } else {
     console.log("logout no session exists");
   }
-  
+
 });
 
 app.post('/login', redirectHome, function (req, res) {
@@ -141,7 +137,7 @@ app.post('/login', redirectHome, function (req, res) {
       const user = users.find(userObj => userObj.username === username);
       if (user) {
         console.log("logged in user");
-        console.log({user});
+        console.log({ user });
         const passwordHash = user.password;
         bcrypt.compare(password, passwordHash, function (err, bres) {
           if (err) {
@@ -152,7 +148,7 @@ app.post('/login', redirectHome, function (req, res) {
               // send the successful response
               //res.redirect("/home");
               req.session.userId = user.username;
-              console.log({requserId: req.session.userId})
+              console.log({ requserId: req.session.userId })
               res.json({ login: true });
             }
           }
@@ -171,7 +167,7 @@ todoRoutes.get('/', function (req, res) {
   getUsers()
     .then(users => {
       // how to get current use
-      console.log({reqUserId: req.session.userId});
+      console.log({ reqUserId: req.session.userId });
       const userObj = users.find(userObj => userObj.username === req.session.userId);
       if (userObj) {
         console.log({ todos: userObj.todos });
@@ -200,7 +196,7 @@ todoRoutes.post('/add', function (req, res) {
     .then(users => {
       // how to get current use
       const userId = req.session.userId;
-      console.log({users, userId});
+      console.log({ users, userId });
       const userObj = users.find(userObj => userObj.username === userId);
 
       if (userObj) {
